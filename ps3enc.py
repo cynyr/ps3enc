@@ -43,60 +43,66 @@ class MainWindow(QtGui.QWidget):
         #is a button with the toggle property and a different pixmap
         self.cb_source = QtGui.QCheckBox("DVD")
         #another button
-        self.b_dest = QtGui.QPushButton("Open dest")
+        self.b_dest = QtGui.QPushButton("Open")
         #you guessed it a lineedit.
         self.e_dest = QtGui.QLineEdit()
         self.connect(self.b_dest, QtCore.SIGNAL('clicked()'), self.bDestClicked)
         
         #create the main vbox
         vbox= QtGui.QVBoxLayout()
-        #this makes it grow in blank space, if you want widgets to grow,
-        #don't use it
 
-        #create a label and set it's alignment
-        label = QtGui.QLabel("Source")
-        label.setAlignment(QtCore.Qt.AlignHCenter)
-        #pack it in the vbox, wonder how you set something to 
-        #not show on the main show() method, see 2 lines down.
-        vbox.addWidget(label)
-        #label.setVisible(False)
+        #create the source section
+        self.g_source = QtGui.QGroupBox("Source")
 
         hbox= QtGui.QHBoxLayout()
         hbox.addWidget(self.cb_source)
         hbox.addWidget(self.e_source)
         hbox.addWidget(self.b_source)
-        vbox.addLayout(hbox)
-
-        label = QtGui.QLabel("Title")
-        label.setAlignment(QtCore.Qt.AlignHCenter)
-        vbox.addWidget(label)
-        self.e_title = QtGui.QLineEdit()
-        vbox.addWidget(self.e_title)
         
-        label = QtGui.QLabel("Destinition")
-        label.setAlignment(QtCore.Qt.AlignHCenter)
-        vbox.addWidget(label)
+        self.g_source.setLayout(hbox)
+        vbox.addWidget(self.g_source)
+
+        
+        #title section
+        self.g_title = QtGui.QGroupBox("Title")
+        hbox = QtGui.QHBoxLayout()
+
+        self.e_title = QtGui.QLineEdit()
+        hbox.addWidget(self.e_title)
+
+        self.g_title.setLayout(hbox)
+        vbox.addWidget(self.g_title)
+        
+        
+        #dest Section
+        self.g_dest = QtGui.QGroupBox("Destinition")
+        #label = QtGui.QLabel("Destinition")
+        #label.setAlignment(QtCore.Qt.AlignHCenter)
+        #vbox.addWidget(label)
 
         hbox= QtGui.QHBoxLayout()
         hbox.addWidget(self.e_dest)
         hbox.addWidget(self.b_dest)
-        vbox.addLayout(hbox)
+        self.g_dest.setLayout(hbox)
+
+        vbox.addWidget(self.g_dest)
         
         self.status_vbox =QtGui.QVBoxLayout()
-        #self.status_vbox.addStretch(0)
-        vbox.addLayout(self.status_vbox)
+        
+        self.status_group = QtGui.QGroupBox("Status - Pass: 0 - ETA: Never")
+        self.status_group.setLayout(self.status_vbox)
+        vbox.addWidget(self.status_group)
+        self.status_group.setVisible(False)
 
-        self.l_pass = QtGui.QLabel("Pass: 0")
-        self.l_pass.setAlignment(QtCore.Qt.AlignHCenter)
-        self.l_eta = QtGui.QLabel("ETA: Never")
-        self.l_eta.setAlignment(QtCore.Qt.AlignHCenter)
-        hbox = QtGui.QHBoxLayout()
-        hbox.setAlignment(QtCore.Qt.AlignHCenter)
-        hbox.addWidget(self.l_pass)
-        hbox.addWidget(self.l_eta)
-        self.status_vbox.addLayout(hbox)
         self.pbar = QtGui.QProgressBar()
         self.status_vbox.addWidget(self.pbar)
+
+
+
+        self.b_start = QtGui.QPushButton("Start")
+        self.connect(self.b_start, QtCore.SIGNAL('clicked()'), self.doStart)
+        vbox.addWidget(self.b_start)
+        #self.
 
         vbox.addStretch(-1) #position to add the flexable space
         self.setLayout(vbox)        
@@ -110,9 +116,14 @@ class MainWindow(QtGui.QWidget):
         #lineedit.setText("a file name would go here")
         print "open a dia here"
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file',
-                    '/home')
+                    os.environ["HOME"])
         if filename != '':
             lineedit.setText(filename)
+    def doStart(self):
+        self.status_group.setVisible(True)
+        if self.e_source.text() == "":
+            print "you fail, enter a source"
+        print "Check values and start the encode here"
 
 app = QtGui.QApplication(sys.argv)
 Window = MainWindow()

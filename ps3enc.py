@@ -108,13 +108,13 @@ class MainWindow(QtGui.QWidget):
         self.setLayout(vbox)        
 
     def bSourceClicked(self):
-        print "Clicked"
+        #print "Clicked"
         self.openFileDia(self.e_source)
     def bDestClicked(self):
         self.openFileDia(self.e_dest)
     def openFileDia(self, lineedit):
         #lineedit.setText("a file name would go here")
-        print "open a dia here"
+        #print "open a dia here"
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file',
                     os.environ["HOME"])
         if filename != '':

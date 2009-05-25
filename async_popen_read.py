@@ -15,25 +15,30 @@ def get_output_line(p):
     return "".join(output_line)
 
 command="ffmpeg -i %s -an -pass 1 -vcodec libx264 -vpre fastfirstpass -b 2000kb -bt 200kb -threads 0 -level 41 -vframes 1000 -f rawvideo -y /dev/null" % sys.argv[1]
-p = Popen(command.split(),stdout=PIPE,stderr=STDOUT,shell=False)
+#command = "ffmpeg -i %s -vcodec copy -acodec copy /dev/null" % (sys.argv[1])
+p = Popen(command.split(),stdout=PIPE,stderr=STDOUT,shell=False,universal_newlines=True)
 _NON_ASCII = re.compile('[^ -~]')
 
+re_framenum=re.compile(r"(?<=frame=)\s+[0-9]+")
 
-while True:
-    line = _NON_ASCII.sub('',get_output_line(p))
+while p.poll() == None:
+    linem = p.stdout.readline()
     #line = get_output_line(p)
-    if line.count(' ') > 0:
-        line = line.split()
-        if line[0] == 'frame=':
+    if linem.count(' ') > 0:
+        line = linem.split()
+        #if line[0] == 'frame=':
+        framenum = re_framenum.search(linem)
+        if framenum != None:
             #print line
             time = int(line[7].split('=')[1].split('.')[0])
-            if time >= 15:
-                break
+            #if time >= 15:
+                #break
             #print time
             if total_seconds != None:
                 percent = float(time)/float(total_seconds) * 100.0
-                print percent
-                frame = int(line[1])
+                print "%3.2f %%" % (percent,)
+                frame = int(framenum.group(0)) #int(line[1])
+                print "Frame: %i" %(frame)
                 fps= int(line[3])
                 if fps == 0:
                     fps = 1
@@ -50,5 +55,5 @@ while True:
             print total_seconds
             total_frames = int(total_seconds * 29.97)
             print total_frames
-p.communicate("q")    
+#p.communicate("q")    
 sys.exit()

@@ -9,12 +9,23 @@ except:
     print "Please install PyQT4"
     sys.exit(1)
 
-class OpenFileButton(QtGui.QPushButton):
-    def __init__(self, text):
-        QtGui.QPushButton.__init__(text)
+class FfmpegBase():
+    """A Base FFmpeg class to handle starting, stopping, retriving output,
+    and determining ETA and percent compleate"""
+    def __init__(infile,outfile=None,vpass=1,size=None):
+        self.infile=infile
+        self.outfile=outfile
+        self.vpass=vpass
+        self.title=title
+        _abitrate = "128kb"
+        _aopts = "-acodec libfaac -ac 6 -ab %s" % (_abitrate,)
+        _vopts = "-deinterlace -vcodec libx264 -vpre hq -crf 22\
+                  -threads 0 -level 41"
+        if size == None:
+            _sopts = ""
+        else:
+            _sopts = "-sws_flags lanczos -s %s" % (size,)
 
-    def Clicked(self,event):
-        print "nothing"
 
 class MainWindow(QtGui.QWidget):
     def __init__(self, parent=None):
@@ -64,14 +75,17 @@ class MainWindow(QtGui.QWidget):
 
         
         #title section
-        self.g_title = QtGui.QGroupBox("Title")
-        hbox = QtGui.QHBoxLayout()
+        #self.g_title = QtGui.QGroupBox("Title")
+        #hbox = QtGui.QHBoxLayout()
 
-        self.e_title = QtGui.QLineEdit()
-        hbox.addWidget(self.e_title)
+        #self.e_title = QtGui.QLineEdit()
+        #hbox.addWidget(self.e_title)
 
-        self.g_title.setLayout(hbox)
-        vbox.addWidget(self.g_title)
+        #self.g_title.setLayout(hbox)
+        #vbox.addWidget(self.g_title)
+
+        #audio section
+        
         
         
         #dest Section
@@ -119,6 +133,10 @@ class MainWindow(QtGui.QWidget):
                     os.environ["HOME"])
         if filename != '':
             lineedit.setText(filename)
+            self.do_audio_section(get_audio_tracks(filename))
+    def do_audio_section(filename):
+        print "get audio for the files."
+
     def doStart(self):
         self.status_group.setVisible(True)
         if self.e_source.text() == "":

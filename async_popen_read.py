@@ -22,7 +22,8 @@ _NON_ASCII = re.compile('[^ -~]')
 re_framenum=re.compile(r"(?<=frame=)\s+[0-9]+")
 
 while p.poll() == None:
-    linem = p.stdout.readline()
+    linem = p.communicate()[0][-1]
+    print linem
     #line = get_output_line(p)
     if linem.count(' ') > 0:
         line = linem.split()

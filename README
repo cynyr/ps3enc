@@ -1,8 +1,5 @@
-This program is eventolly going to rip a dvd to a .vob, and then 
-encode that vob into a .mp4 suitiable for playing on the PS3's gameos. 
+ps3enc2.py is a base class that will encode the given list of files to a ps3 
+compatiable h.264 + AAC mpeg4 file. The default output is to the console. That is all this does at the moment no more, no less.
 
-TODO:
-Everything
-
-BUGS:
-0 as nothing has been started yet.
+An additional class will be added to provide a QT4||GTK2+ gui for a progress
+bar and graphical file chooser later.

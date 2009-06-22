@@ -40,7 +40,7 @@ def Main(files, sizeopts = None):
                 output(eta, percent, file, filenum +1, filesn)
         t2=time()
         sys.stdout.write(" "*79 + "\r")
-        sys.stdout.write(file " compleated in: " + sec_to_hms(str(t2-t1)))
+        sys.stdout.write(file + " compleated in: " + sec_to_hms(str(t2-t1)))
         #print proc.poll()
 
 def output(eta, percent, file, filenum=1, total_files=1):
@@ -52,14 +52,14 @@ def output(eta, percent, file, filenum=1, total_files=1):
 
     To provide a different output type override this function.
     """
-    sys.stdout.write(" " * 79 + "\r")
+    sys.stdout.write("\r" + " " * 79 + "\r")
     sys.stdout.write("file " + str(filenum) + "/" + str(total_files))
     sys.stdout.write(" " + file)
-    sys.stdout.write(" " + sec_to_hms(eta) + ", %3.2f%%\r" % (percent))
+    sys.stdout.write(" " + sec_to_hms(eta) + ", %3.2f%%" % (percent))
 
 def sec_to_hms(seconds):
     """returns a string that is in HH:MM:SS from the seconds passed"""
-    seconds = int(seconds)
+    seconds = int(float(seconds))
     hours = seconds/3600
     minutes = (seconds%3600)/60
     secs = (seconds%3600)%60
@@ -72,6 +72,7 @@ def debug_print_output_line(line):
 
 def build_command_list(sinfo,src,dest):
     cmd = []
+    cmd.extend(["nice", "-n", "20"])
     cmd.extend(["ffmpeg", "-i", src])
     maps = GetAudioMap(sinfo)
     #print maps
@@ -80,9 +81,9 @@ def build_command_list(sinfo,src,dest):
     cmd.extend(["hq", "-crf", crf, "-threads", "0", "-level", "41"])
     cmd.extend(["-acodec", "libfaac", "-ac", "6", "-ab", audio_bitrate])
     #comment this line after testing
-    cmd.extend(["-vframes", "3000", "-f", "rawvideo", "-y", "/dev/null"])
+    #cmd.extend(["-vframes", "3000", "-f", "rawvideo", "-y", "/dev/null"])
     #uncomment after testing
-    #cmd.append(dest)
+    cmd.append(dest)
     if maps[1] != "stereo" and maps[2] != "aac":
         cmd.extend(["-map", maps[0]])
         cmd.extend(["-acodec", "libfaac", "-ac", "2", "-ab", audio_bitrate])

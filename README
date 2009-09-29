@@ -2,8 +2,9 @@ FfmpegBase2.py is a base class that will encode the given list of files to a ps3
 compatiable h.264 + AAC mpeg4 file. The default output is to the console.
 That is all this does at the moment no more, no less. It does the encode in a 
 seprate thread that allows event loops *cough*QT*cough* to run. It communicates
-to the UI thread via a UDP socket on localhost. Support me be added in the future to run the encode on one machine and the UI on another. no support for that
-is planed at the moment.
+to the UI thread via a UDP socket on localhost. Support me be added in the 
+future to run the encode on one machine and the UI on another.
+No support for that is planed at the moment.
 
 An additional class will be added to provide a QT4||GTK2+ gui for a progress
 bar and graphical file chooser later, and maybe a basic dvd ripper. 

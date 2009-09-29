@@ -20,3 +20,5 @@ while len(args) > 1:
     #ret = call(cmd, stdout=PIPE, stderr=PIPE)
     ret = call(cmd)
     print ret
+
+call(["eject"])

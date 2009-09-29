@@ -7,7 +7,7 @@ try:
     import threading
     from time import time
     from subprocess import Popen,PIPE,STDOUT
-    from socket import socket,AF_INET,SOCK_DGRAM
+    from socket import socket,AF_INET,SOCK_DGRAM,timeout
 except ImportError,why:
     print why
 
@@ -32,14 +32,14 @@ class Ffmpeg(threading.Thread):
         self.video_codec = ["-vcodec","libx264"]
         self.audio_codec = ["-acodec", "libfaac"]
         self.main_channels = ["-ac", "6"]
-        self.second_channels = ["ac", "2"]
+        self.second_channels = ["-ac", "2"]
         self.audio_bitrate = ["-ab", str(abr)]
         self.video_map = ["-map", "0:0"]
         self.level = ["-level", "41"]
-        self.theads = ["-threads", "0"]
+        self.threads = ["-threads", "0"]
         self.deinterlace = ["-deinterlace"]
         self.newaudio = ["-newaudio"]
-        self.test_settings = ["-vframes", "3000", "-f", "rawvideo", "-y"]
+        self.test_settings = ["-vframes", "500", "-f", "rawvideo", "-y"]
         
         self._address = (str(host),int(port))
         if socket_:
@@ -52,8 +52,6 @@ class Ffmpeg(threading.Thread):
     
     def output(self,eta,percent,file,currentfilenumber,totalfiles):
         data = "||".join((eta,percent,file,currentfilenumber,totalfiles))
-        print data
-        print self._address
         self._socket.sendto(data,self._address)
 
     def get_audio_map(self,source_info,):
@@ -73,8 +71,6 @@ class Ffmpeg(threading.Thread):
 
         pattern = re.compile(re_track, re.MULTILINE)
         s = pattern.search(source_info)
-        print s
-
         if s:
             s = s.group(0)
         else:
@@ -82,7 +78,6 @@ class Ffmpeg(threading.Thread):
             s = pattern.search(source_info)
             if s:
                 s = s.group(0)
-        
         if s:
             map = re.search(re_map, s)
             channels = re.search(re_channels, s)
@@ -96,8 +91,7 @@ class Ffmpeg(threading.Thread):
                 mapping_.codec = codec.group(0)
         return mapping_
 
-
-    def get_command(self, source_info, source, destination):
+    def get_command(self, source_info, source, destination, test=False):
         """get_command(sources_info,source,destination)
 
         builds the command to pass to popen.
@@ -109,9 +103,17 @@ class Ffmpeg(threading.Thread):
         cmd = []
         cmd.extend(self.ffmpeg + [source] + self.video_map)
         audio_map = self.get_audio_map(source_info)
-        print audio_map.map
         cmd.extend(audio_map.map)
-
+        cmd.extend(self.deinterlace + self.video_codec + self.video_preset)
+        cmd.extend(self.crf + self.threads + self.level + self.audio_codec)
+        cmd.extend(self.main_channels + self.audio_bitrate)
+        if test:
+            cmd.extend(self.test_settings)
+        cmd.append(destination)
+        if audio_map.channels != "stereo" and audio_map.codec != "aac":
+            cmd.extend(audio_map.map + self.audio_codec)
+            cmd.extend(self.second_channels + self.audio_bitrate)
+            cmd.extend(self.newaudio)
         return cmd
     
     def get_source_info(self, source):
@@ -123,16 +125,101 @@ class Ffmpeg(threading.Thread):
         p = Popen(cmd,stdout=PIPE,stderr=STDOUT,shell=False,
                   universal_newlines=True)
         return p.communicate()[0]
+    
+    def get_output_name(self, filename, test=False):
+        extension = ".mp4"
+        if test:
+            return "/dev/null"
+        basename = os.path.basename(filename)
+        new_name = "./" + basename.split(".")[0] + extension
+        if os.access(new_name, os.F_OK):
+            key = "-" + str(time()).replace(".","")
+            new_name = new_name.split(".")[1] + key + extension
+        return new_name
+
+    def get_duration(self, source_info):
+        pattern = re.compile(r"(?<=Duration:\s)([0-9]+:)+[0-9]+\.[0-9]+",
+                             re.MULTILINE)
+        s = pattern.search(source_info)
+        duration = None
+        if s:
+            duration = s.group(0)
+        else:
+            #add using mplayer to get the duration here later
+            pass
+        return duration
+                
+    def get_fps(self,source_info):
+        fps = None
+        pattern = re.compile(r"[0-9]+\.[0-9]+(?=\stbr)", re.MULTILINE)
+        s = pattern.search(source_info)
+        if s:
+            fps = s.group(0)
+        return fps
+    def isotime_to_seconds(self,isotime):
+        hours,minutes,seconds = isotime.split(":")
+        seconds = float(seconds)
+        seconds += float(hours) * 3600.0
+        seconds += float(minutes) * 60.0
+        return seconds
 
     def run(self):
         for file in self.files:
+            print "starting file: " + file
             #self.output("1","2",file,str(self.files.index(file)+1),
             #            str(len(self.files)))
             source_info = self.get_source_info(file)
-            print self.get_command(source_info, file, "./foo")
-            pass
+            dest_file_name = self.get_output_name(file, test=True)
+            duration = self.get_duration(source_info)
+            duration = self.isotime_to_seconds(duration)
+            framerate = self.get_fps(source_info)
+            total_frames = duration * float(framerate)
+            ffmpeg_command = self.get_command(source_info, file,
+                                              dest_file_name,test=True)
+            #print " ".join(ffmpeg_command)
+            time1 = time()
+            ffmpeg_p = Popen(ffmpeg_command, stdout=PIPE,stderr=STDOUT,
+                             shell=False,universal_newlines=True)
+            while ffmpeg_p.poll() == None:
+                output_line = ffmpeg_p.stdout.readline()
+                frame_number = re.search(r"(?<=frame=)\s*[0-9]+", output_line)
+                fps = re.search(r"(?<=fps=)\s*[0-9]+", output_line)
+                if frame_number and fps:
+                    frame_number = int(frame_number.group(0).strip())
+                    fps = int(fps.group(0).strip())
+                    if fps == 0:
+                        fps = 1
+                    frames_remaining = total_frames-frame_number
+                    eta = int(frames_remaining/fps)
+                    percent_compleate = frame_number/total_frames*100
+                    #self.output(eta,percent,file,currentfilenumber,totalfiles):
+                    self.output(str(eta),str(percent_compleate),file,
+                                str(self.files.index(file)+1), 
+                                str(len(self.files)))
+
+            
 
 if __name__ == "__main__":
     import sys
     ff=Ffmpeg(sys.argv[1:])
     ff.start()
+    sock = socket(AF_INET,SOCK_DGRAM)
+    sock.bind(("localhost",36134))
+    sock.settimeout(15)
+    old_len = 0
+    while threading.activeCount() > 1:
+        try:
+            data,addr = sock.recvfrom(1024)
+        except timeout:
+            print
+            sys.exit(3)
+        if data:
+            sys.stdout.write("\r" + " "*old_len)
+            eta,percent,file,filenumber,totalfiles = data.split("||")
+            s = "\r%d/%d %03.02f%% %i left on %s" % (int(filenumber),
+                                                  int(totalfiles),
+                                                  float(percent),int(eta),
+                                                  os.path.basename(file))
+            old_len = len(s)
+            sys.stdout.write(s)
+        

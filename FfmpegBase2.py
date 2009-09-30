@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 try:
     import os
@@ -8,8 +9,8 @@ try:
     from time import time
     from subprocess import Popen,PIPE,STDOUT
     from socket import socket,AF_INET,SOCK_DGRAM,timeout
-except ImportError,why:
-    print why
+except ImportError as err:
+    print(err.args)
 
 class mapping():
     def __init__(self):
@@ -52,7 +53,7 @@ class Ffmpeg(threading.Thread):
     
     def output(self,eta,percent,file,currentfilenumber,totalfiles):
         data = "||".join((eta,percent,file,currentfilenumber,totalfiles))
-        self._socket.sendto(data,self._address)
+        self._socket.sendto(data.encode(),self._address)
 
     def get_audio_map(self,source_info,):
         """get_audio_map(source_info,track="0x80")
@@ -165,7 +166,7 @@ class Ffmpeg(threading.Thread):
 
     def run(self):
         for file in self.files:
-            print "starting file: " + file
+            print("starting file: " + file)
             #self.output("1","2",file,str(self.files.index(file)+1),
             #            str(len(self.files)))
             source_info = self.get_source_info(file)
@@ -211,11 +212,11 @@ if __name__ == "__main__":
         try:
             data,addr = sock.recvfrom(1024)
         except timeout:
-            print
+            print()
             sys.exit(3)
         if data:
             sys.stdout.write("\r" + " "*old_len)
-            eta,percent,file,filenumber,totalfiles = data.split("||")
+            eta,percent,file,filenumber,totalfiles = data.decode().split("||")
             s = "\r%d/%d %03.02f%% %i left on %s" % (int(filenumber),
                                                   int(totalfiles),
                                                   float(percent),int(eta),

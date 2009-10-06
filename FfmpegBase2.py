@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import print_function
 
 try:
@@ -21,15 +20,21 @@ class mapping():
 
 class Ffmpeg(threading.Thread):
     def __init__(self,files,host="localhost", port=36134,
-                 abr="256kb",crf="22", scaleto=None, socket_=None):
+                 abr="256kb",crf="22", scaleto=None, socket_=None,
+                 output_dir="./"):
         threading.Thread.__init__(self)
+        if not output_dir.endswith("/"):
+            self.output_dir = "".join(self.output_dir, "/")
+        else:
+            self.output_dir = output_dir
+        self.extension = ".mp4"
         self.files = list(files)
         self.scaleto = str(scaleto)
         self.track_id = "0x80"
         self.fps = 59.94
         self.ffmpeg = ["ffmpeg", "-i"]
         self.crf = ["-crf", str(crf)]
-        self.video_preset = ["-vpre","normal"]
+        self.video_preset = ["-vpre","hq"]
         self.video_codec = ["-vcodec","libx264"]
         self.audio_codec = ["-acodec", "libfaac"]
         self.main_channels = ["-ac", "6"]
@@ -128,14 +133,14 @@ class Ffmpeg(threading.Thread):
         return p.communicate()[0]
     
     def get_output_name(self, filename, test=False):
-        extension = ".mp4"
         if test:
             return "/dev/null"
         basename = os.path.basename(filename)
-        new_name = "./" + basename.split(".")[0] + extension
+        new_name = basename.split(".")[0] + self.extension
         if os.access(new_name, os.F_OK):
             key = "-" + str(time()).replace(".","")
-            new_name = new_name.split(".")[1] + key + extension
+            new_name = new_name.split(".")[0] + key + extension
+        new_name = "".join([self.output_dir, new_name])
         return new_name
 
     def get_duration(self, source_info):
@@ -166,23 +171,29 @@ class Ffmpeg(threading.Thread):
 
     def run(self):
         for file in self.files:
-            print("starting file: " + file)
+            #print("starting file: " + file)
+            if not os.access(file, os.F_OK):
+                break
             #self.output("1","2",file,str(self.files.index(file)+1),
             #            str(len(self.files)))
             source_info = self.get_source_info(file)
-            dest_file_name = self.get_output_name(file, test=True)
+            dest_file_name = self.get_output_name(file)
             duration = self.get_duration(source_info)
+            if not duration:
+                break
             duration = self.isotime_to_seconds(duration)
             framerate = self.get_fps(source_info)
+            print("framerate: " + str(framerate))
             total_frames = duration * float(framerate)
             ffmpeg_command = self.get_command(source_info, file,
-                                              dest_file_name,test=True)
-            #print " ".join(ffmpeg_command)
+                                              dest_file_name)
+            #print(" ".join(ffmpeg_command))
             time1 = time()
             ffmpeg_p = Popen(ffmpeg_command, stdout=PIPE,stderr=STDOUT,
                              shell=False,universal_newlines=True)
             while ffmpeg_p.poll() == None:
                 output_line = ffmpeg_p.stdout.readline()
+                #print(output_line)
                 frame_number = re.search(r"(?<=frame=)\s*[0-9]+", output_line)
                 fps = re.search(r"(?<=fps=)\s*[0-9]+", output_line)
                 if frame_number and fps:
@@ -202,7 +213,12 @@ class Ffmpeg(threading.Thread):
 
 if __name__ == "__main__":
     import sys
-    ff=Ffmpeg(sys.argv[1:])
+    from optparse import OptionParser
+    p = OptionParser()
+    p.add_option("-d", dest="dir", default="./",
+                 help="Where to save the output files")
+    (options, args) = p.parse_args()
+    ff=Ffmpeg(args, output_dir=options.dir)
     ff.start()
     sock = socket(AF_INET,SOCK_DGRAM)
     sock.bind(("localhost",36134))

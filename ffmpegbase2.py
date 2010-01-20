@@ -46,19 +46,21 @@ class Ffmpeg(threading.Thread):
         self.deinterlace = ["-deinterlace"]
         self.newaudio = ["-newaudio"]
         self.test_settings = ["-vframes", "500", "-f", "rawvideo", "-y"]
+        self.outputframerate = ["-r", "24000/1001"]
         
         self._address = (str(host),int(port))
         if socket_:
             self._socket = socket_
         else:
             self._socket = socket(AF_INET, SOCK_DGRAM)
+            self._socket.connect(self._address)
     
     def add_file(self,file):
         self.files.append(file)
     
     def output(self,eta,percent,file,currentfilenumber,totalfiles):
         data = "||".join((eta,percent,file,currentfilenumber,totalfiles))
-        self._socket.sendto(data.encode(),self._address)
+        self._socket.send(data.encode())
 
     def get_audio_map(self,source_info,):
         """get_audio_map(source_info,track="0x80")
@@ -113,6 +115,7 @@ class Ffmpeg(threading.Thread):
         cmd.extend(self.deinterlace + self.video_codec + self.video_preset)
         cmd.extend(self.crf + self.threads + self.level + self.audio_codec)
         cmd.extend(self.main_channels + self.audio_bitrate)
+        cmd.extend(self.outputframerate)
         if test:
             cmd.extend(self.test_settings)
         cmd.append(destination)
@@ -139,7 +142,7 @@ class Ffmpeg(threading.Thread):
         new_name = basename.split(".")[0] + self.extension
         if os.access(new_name, os.F_OK):
             key = "-" + str(time()).replace(".","")
-            new_name = new_name.split(".")[0] + key + extension
+            new_name = new_name.split(".")[0] + key + self.extension
         new_name = "".join([self.output_dir, new_name])
         return new_name
 
@@ -161,7 +164,32 @@ class Ffmpeg(threading.Thread):
         s = pattern.search(source_info)
         if s:
             fps = s.group(0)
+        fps = 23.97
         return fps
+    def parse_ffmpeg_output(self,output_line,total_frames,duration):
+        """parse_ffmpeg_output(output_line,total_frames):
+
+        Returns (eta,percent) ETA based on total_frames/fps.
+        percent based on total duration and curent position."""
+        eta=0
+        percent=0
+        frame_number = re.search(r"(?<=frame=)\s*[0-9]+", output_line)
+        fps = re.search(r"(?<=fps=)\s*[0-9]+", output_line)
+        time = re.search(r"(?<=time=)\s*[0-9]+\.[0-9]+", output_line)
+        if frame_number and fps and time:
+            frame_number = int(frame_number.group(0).strip())
+            fps = int(fps.group(0).strip())
+            time = float(time.group(0).strip())
+            #print([frame_number, fps, time, duration])
+            if fps == 0:
+                fps = 1
+            frames_remaining = total_frames-frame_number
+            eta = int(frames_remaining/fps)
+            percent = (time/duration)*100
+
+        return (eta,percent)
+        
+
     def isotime_to_seconds(self,isotime):
         hours,minutes,seconds = isotime.split(":")
         seconds = float(seconds)
@@ -187,27 +215,18 @@ class Ffmpeg(threading.Thread):
             total_frames = duration * float(framerate)
             ffmpeg_command = self.get_command(source_info, file,
                                               dest_file_name)
-            #print(" ".join(ffmpeg_command))
+            print(" ".join(ffmpeg_command))
             time1 = time()
             ffmpeg_p = Popen(ffmpeg_command, stdout=PIPE,stderr=STDOUT,
                              shell=False,universal_newlines=True)
             while ffmpeg_p.poll() == None:
                 output_line = ffmpeg_p.stdout.readline()
                 #print(output_line)
-                frame_number = re.search(r"(?<=frame=)\s*[0-9]+", output_line)
-                fps = re.search(r"(?<=fps=)\s*[0-9]+", output_line)
-                if frame_number and fps:
-                    frame_number = int(frame_number.group(0).strip())
-                    fps = int(fps.group(0).strip())
-                    if fps == 0:
-                        fps = 1
-                    frames_remaining = total_frames-frame_number
-                    eta = int(frames_remaining/fps)
-                    percent_compleate = frame_number/total_frames*100
-                    #self.output(eta,percent,file,currentfilenumber,totalfiles):
-                    self.output(str(eta),str(percent_compleate),file,
-                                str(self.files.index(file)+1), 
-                                str(len(self.files)))
+                (eta,percent)=self.parse_ffmpeg_output(output_line,total_frames,duration)
+                #self.output(eta,percent,file,currentfilenumber,totalfiles):
+                self.output(str(eta),str(percent),file,
+                            str(self.files.index(file)+1), 
+                            str(len(self.files)))
 
             
 
@@ -239,4 +258,5 @@ if __name__ == "__main__":
                                                   os.path.basename(file))
             old_len = len(s)
             sys.stdout.write(s)
+    print()
         

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+format = {'fmt':'mpeg','ext':'.mpeg'}
 import os
 import re
 import sys
@@ -15,6 +15,7 @@ class ripper():
             (self.options,self.args) = self.get_args()
         else:
             (self.options,self.args) = options
+        print format
     def run(self,):
         while True:
             self.drvclose()
@@ -31,7 +32,7 @@ class ripper():
                 me_cmd.extend(['mencoder', 'dvd://' + str(self.track), '-oac'])
                 me_cmd.extend(['copy', '-msglevel', 'all=-1'])
                 me_cmd.extend(['-ovc', 'copy', '-alang', 'en', '-channels', ])
-                me_cmd.extend(['6', '-of', 'mpeg', '-o', self.fn])
+                me_cmd.extend(['6', '-of', format["fmt"], '-o', self.fn])
                 print " ".join(me_cmd)
     
                 p = Popen(me_cmd, stdout=PIPE, stderr=STDOUT, shell=False)
@@ -42,7 +43,7 @@ class ripper():
             self.drvopen()
             raw_input("Press enter to start next disk")
     def gen_file_name(self,):
-        nfn = self.title + ".mpeg"
+        nfn = self.title + format["ext"]
         if not os.access("./" + nfn, os.F_OK):
             return nfn
         else:

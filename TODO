@@ -1,0 +1,8 @@
+-Add a GUI
+-Fixup terminal output
+-Add config file and command line parsing.
+    -use configurationfileparser to parse config files
+    -use the builtin parser to handle command line switches
+-add total time message.
+-write a wrapper for the baseclass that handles the config stuff
+-port to python3k

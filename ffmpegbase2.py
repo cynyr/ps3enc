@@ -1,8 +1,8 @@
 from __future__ import print_function
 """ffmpegbase2 - A Python library for spawning a very specific ffmpeg thread"""
-#__name__ = "ffmpegbase2"
 __version__ = (0, 0, 2)
 __author__ = "Andrew Frink <andrew.frink@gmail.com>"
+__all__ = ["Ffmpeg",]
 
 try:
     import os
@@ -56,7 +56,7 @@ class Ffmpeg(threading.Thread):
 
         if not output_dir.endswith("/"):
             self.output_dir = "".join(self.output_dir, "/")
-            #I wonder why is didn't just dir + "/" here.
+            #I wonder why i didn't just dir + "/" here.
         else:
             self.output_dir = output_dir
 
@@ -64,7 +64,6 @@ class Ffmpeg(threading.Thread):
         self.files = list(files)
         self.scaleto = str(scaleto)
         self.track_id = "0x80"
-        #self.fps = 59.94
         self.ffmpeg = ["ffmpeg", "-i"]
         self.crf = ["-crf", str(crf)]
         self.video_preset = ["-vpre","hq"]
@@ -164,9 +163,9 @@ class Ffmpeg(threading.Thread):
         destination as str - filename of the destination
 
         """
-        self.video_map.append(self.get_video_map(source_info))
         cmd = []
         cmd.extend(self.ffmpeg + [source] + self.video_map)
+        cmd.append(self.get_video_map(source_info))
         audio_map = self.get_audio_map(source_info)
         cmd.extend(audio_map.map)
         cmd.extend(self.deinterlace + self.video_codec + self.video_preset)
@@ -294,8 +293,6 @@ class Ffmpeg(threading.Thread):
             print("starting file: " + file)
             if not os.access(file, os.F_OK):
                 break
-            #self.output("1","2",file,str(self.files.index(file)+1),
-            #            str(len(self.files)))
             source_info = self.get_source_info(file)
             dest_file_name = self.get_output_name(file)
             duration = self.get_duration(source_info)
@@ -309,7 +306,8 @@ class Ffmpeg(threading.Thread):
                                               dest_file_name)
             if self.printcmd:
                 print(" ".join(ffmpeg_command))
-            #time1 = time()
+            #universal_newlines is needed because ffmpeg helpfully uses \r 
+            #instead of \n. it also helpfully uses stderr. 
             ffmpeg_p = Popen(ffmpeg_command, stdout=PIPE,stderr=STDOUT,
                              shell=False,universal_newlines=True)
             while ffmpeg_p.poll() == None:

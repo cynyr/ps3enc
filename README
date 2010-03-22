@@ -1,3 +1,11 @@
+ps3enc4.py takes a -d for the output directory, and a list of input files. Currently this only will print out to stdout, a curses gui is in the works (guis.CursesGui). Threading mentioned below is done, communication is over UDP sockets now. 
+
+
+
+
+
+
+OBSOLETE BELOW HERE!
 FfmpegBase2.py is a base class that will encode the given list of files to a ps3
 compatiable h.264 + AAC mpeg4 file. The default output is to the console.
 That is all this does at the moment no more, no less. It does the encode in a 

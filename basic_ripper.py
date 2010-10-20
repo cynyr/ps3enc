@@ -14,10 +14,10 @@ def build_commands(args):
         name = args.pop(0)
         cmd.extend(["mencoder", "-alang", alang, "-channels", chan])
         cmd.extend(["-msglevel", "all=" + msglevel,])
-        cmd.extend(["dvd://" + track, "-oac", "copy", "-ovc", "copy"])
+        cmd.extend(["dvdnav://" + track, "-oac", "copy", "-ovc", "copy"])
         cmd.extend(["-of", "mpeg"])
         cmd.extend(["-o", name + ".mpeg"])
-        #print " ".join(cmd)
+        print " ".join(cmd)
         cmds.append(cmd)
     return cmds
 

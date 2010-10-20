@@ -29,7 +29,7 @@ class ripper():
                 self.fn = self.gen_file_name()
                 #print self.fn
                 me_cmd = []
-                me_cmd.extend(['mencoder', 'dvd://' + str(self.track), '-oac'])
+                me_cmd.extend(['mencoder', 'dvdnav://' + str(self.track), '-oac'])
                 me_cmd.extend(['copy', '-msglevel', 'all=-1'])
                 me_cmd.extend(['-ovc', 'copy', '-alang', 'en', '-channels', ])
                 me_cmd.extend(['6', '-of', format["fmt"], '-o', self.fn])
@@ -42,6 +42,7 @@ class ripper():
                 
             self.drvopen()
             raw_input("Press enter to start next disk")
+
     def gen_file_name(self,):
         nfn = self.title + format["ext"]
         if not os.access("./" + nfn, os.F_OK):

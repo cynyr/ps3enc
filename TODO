@@ -1,8 +1,25 @@
--Add a GUI
--Fixup terminal output
 -Add config file and command line parsing.
     -use configurationfileparser to parse config files
     -use the builtin parser to handle command line switches
--add total time message.
--write a wrapper for the baseclass that handles the config stuff
+        *"--outputdir <dir>","-d" default=os.getcwd()
+        *"--host <hostname>", "-h", default="localhost"
+        *"--port <portnumber>", "-p", default=36134
+        *"--crf <crf number>", default=22
+        *"--audiobitrate", "-abr", default="256KB"
+        *"--config", "-c", default=None
+        *"--ignore-defaults" default=False
+        *"--debug <level>", "-D", default=0
+        *"--threads", default=0 #let libx264 pick for us.
+    -ensure things like passing in an additional config file are sane
+-Make use of ffprobe, to get stream info.
+-Add tests to ensure Ffmpeg has encoder/decoder support needed is there
+-Fixup terminal output
+-Add a GUI
+    -Input file selection
+    -Insertion of files into the que
+    -Ability to rip disks to temp files.
+    -Modify the config file
+-add total time message, and time per track.
 -port to python3k
+-test on windows.
+-

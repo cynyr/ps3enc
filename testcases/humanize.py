@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 def humanize_seconds(seconds):
-    if not isinstance(seconds,int):
+    if not isinstance(seconds,(int,float)):
         seconds = float(seconds)
     (minutes, seconds) = divmod(seconds, 60)
     (hours, minutes) = divmod(minutes, 60)

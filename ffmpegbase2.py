@@ -61,6 +61,7 @@ class Ffmpeg(threading.Thread):
     
     def output(self,eta,percent,file,currentfilenumber,totalfiles):
         data = "||".join((eta,percent,file,currentfilenumber,totalfiles))
+        #sys.stderr.write(data.encode())
         self._socket.send(data.encode())
 
     def get_audio_map(self,source_info,):
@@ -177,11 +178,11 @@ class Ffmpeg(threading.Thread):
         percent=0
         frame_number = re.search(r"(?<=frame=)\s*[0-9]+", output_line)
         fps = re.search(r"(?<=fps=)\s*[0-9]+", output_line)
-        time = re.search(r"(?<=time=)\s*[0-9]+\.[0-9]+", output_line)
+        time = re.search(r"(?<=time=)\s*[0-9:]+\.[0-9]+", output_line)
         if frame_number and fps and time:
             frame_number = int(frame_number.group(0).strip())
             fps = int(fps.group(0).strip())
-            time = float(time.group(0).strip())
+            time = float(self.isotime_to_seconds(time.group(0).strip()))
             #print([frame_number, fps, time, duration])
             if fps == 0:
                 fps = 1
